@@ -12,6 +12,7 @@ import com.ft.universalpublishing.documentstore.handler.HandlerChain;
 import com.ft.universalpublishing.documentstore.handler.MultipleUuidValidationHandler;
 import com.ft.universalpublishing.documentstore.handler.PreSaveFieldRemovalHandler;
 import com.ft.universalpublishing.documentstore.handler.UuidValidationHandler;
+import com.ft.universalpublishing.documentstore.handler.DebugHandler;
 import com.ft.universalpublishing.documentstore.health.DocumentStoreConnectionGoodToGoChecker;
 import com.ft.universalpublishing.documentstore.health.DocumentStoreConnectionHealthCheck;
 import com.ft.universalpublishing.documentstore.health.DocumentStoreIndexHealthCheck;
@@ -96,6 +97,8 @@ public class DocumentStoreApiApplication extends Application<DocumentStoreApiCon
         Handler extractConceptHandler = new ExtractConceptHandler();
         Handler contentListValidationHandler = new ContentListValidationHandler(contentListValidator);
         Handler preSaveFieldRemovalHandler = new PreSaveFieldRemovalHandler();
+	Handler debugHandler = new DebugHandler();
+
         Target findResourceByUuid = new FindResourceByUuidTarget(documentStoreService);
         Target findMultipleResourcesByUuidsTarget = new FindMultipleResourcesByUuidsTarget(documentStoreService);
         Target writeDocument = new WriteDocumentTarget(documentStoreService);
@@ -133,7 +136,7 @@ public class DocumentStoreApiApplication extends Application<DocumentStoreApiCon
         collections.put(new Pair<>("internalcomponents", Operation.GET_BY_ID),
                 new HandlerChain().addHandlers(uuidValidationHandler).setTarget(findResourceByUuid));
         collections.put(new Pair<>("internalcomponents", Operation.ADD),
-                new HandlerChain().addHandlers(uuidValidationHandler).setTarget(writeDocument));
+                new HandlerChain().addHandlers(uuidValidationHandler, debugHandler).setTarget(writeDocument));
         collections.put(new Pair<>("internalcomponents", Operation.REMOVE),
                 new HandlerChain().addHandlers(uuidValidationHandler).setTarget(deleteDocument));
 
