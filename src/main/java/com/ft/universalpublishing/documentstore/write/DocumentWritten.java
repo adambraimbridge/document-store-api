@@ -1,6 +1,5 @@
 package com.ft.universalpublishing.documentstore.write;
 
-
 import static com.ft.universalpublishing.documentstore.write.DocumentWritten.Mode.Created;
 import static com.ft.universalpublishing.documentstore.write.DocumentWritten.Mode.Deleted;
 import static com.ft.universalpublishing.documentstore.write.DocumentWritten.Mode.Updated;
@@ -33,12 +32,12 @@ public class DocumentWritten {
         return new DocumentWritten(Updated, document);
 
     }
-    
+
     public static DocumentWritten created(Document content) {
         return new DocumentWritten(Created, content);
     }
 
     public static DocumentWritten deleted(Document content) {
-		return new DocumentWritten(Deleted, content);
-	}
+        return new DocumentWritten(Deleted, content);
+    }
 }
