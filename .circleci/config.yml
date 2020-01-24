@@ -15,7 +15,6 @@ jobs:
       - image: mongo:3.2.18
     steps:
       - checkout
-            path: ~/document-store-api
       - setup_remote_docker
       - run:
           name: Build package & run tests
