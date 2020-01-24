@@ -7,9 +7,11 @@ import static com.ft.universalpublishing.documentstore.model.read.Operation.GET_
 import static com.ft.universalpublishing.documentstore.model.read.Operation.GET_MULTIPLE_FILTERED;
 import static com.ft.universalpublishing.documentstore.model.read.Operation.REMOVE;
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
+import static org.slf4j.MDC.get;
 import static com.ft.universalpublishing.documentstore.utils.FluentLoggingUtils.MESSAGE;
 import static com.ft.universalpublishing.documentstore.utils.FluentLoggingUtils.METHOD_DELETE;
 import static com.ft.universalpublishing.documentstore.utils.FluentLoggingUtils.METHOD_PUT;
+import static com.ft.universalpublishing.documentstore.utils.FluentLoggingUtils.TRANSACTION_ID;
 import static com.ft.universalpublishing.documentstore.utils.FluentLoggingUtils.UUID;
 
 import java.util.List;
@@ -124,6 +126,7 @@ public class DocumentResource {
         context.setUriInfo(uriInfo);
 
         logger.withMetodName("writeInCollection")
+                .withTransactionId(get(TRANSACTION_ID))
                 .withRequest(context, METHOD_PUT, "/{collection}/{uuidString}")
                 .withUriInfo(uriInfo).withField(UUID, uuidString);
 
@@ -153,6 +156,7 @@ public class DocumentResource {
         context.setUriInfo(uriInfo);
 
         logger.withMetodName("deleteFromCollection")
+                .withTransactionId(get(TRANSACTION_ID))
                 .withRequest(context, METHOD_DELETE, "/{collection}/{uuidString}")
                 .withUriInfo(uriInfo).withField(UUID, uuidString);
 
