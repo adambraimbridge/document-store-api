@@ -213,7 +213,7 @@ public class MongoDocumentStoreServiceListTest {
                 items.add(new BasicDBObject().append("uuid", contentUuid1));
                 items.add(new BasicDBObject().append("webUrl", WEBURL));
 
-                final Document concept = (new Document()).append("uuid", Arrays.toString(CONCEPT_UUIDS))
+                final Document concept = (new Document()).append("uuid", CONCEPT_UUIDS[0].toString())
                                 .append("prefLabel", CONCEPT_LABEL);
 
                 final Document toInsert = new Document().append("uuid", uuid.toString())
@@ -241,7 +241,7 @@ public class MongoDocumentStoreServiceListTest {
                 items.add(new BasicDBObject().append("uuid", contentUuid1));
                 items.add(new BasicDBObject().append("webUrl", WEBURL));
 
-                final Document concept = (new Document()).append("uuid", Arrays.toString(CONCEPT_UUIDS))
+                final Document concept = (new Document()).append("uuid", CONCEPT_UUIDS[0].toString())
                                 .append("prefLabel", CONCEPT_LABEL);
 
                 final Document toInsert1 = new Document().append("uuid", uuid.toString())

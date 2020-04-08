@@ -1,10 +1,11 @@
 package com.ft.universalpublishing.documentstore.target;
 
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 import javax.servlet.http.HttpServletResponse;
 
@@ -31,24 +32,34 @@ public class ApplyConcordedConceptsToListsTarget implements Target {
         final List<Document> listDocuments = context.getDocuments();
 
         // get all concepts from the lists and deduplicate them
-        Set<String> strings = listDocuments.stream().map(list -> {
+        Set<String> conceptUuidSet = new HashSet<>();
+        listDocuments.forEach(list -> {
             final Document concept = (Document) list.get("concept");
-            return (String) concept.get("uuid");
-        }).collect(Collectors.toSet());
-        String[] conceptUUIDs = new String[] {};
-        conceptUUIDs = strings.toArray(conceptUUIDs);
-
+            if (concept != null) {
+                conceptUuidSet.add((String) concept.get("uuid"));
+            }
+        });
+        String[] conceptUuids = new String[] {};
+        conceptUuids = conceptUuidSet.toArray(conceptUuids);
+        System.out.println(Arrays.toString(conceptUuids));
         try {
-            final List<Concept> conceptsFound = publicConceptsApiService.searchConcepts(conceptUUIDs);
+            final List<Concept> conceptsFound = publicConceptsApiService.searchConcepts(conceptUuids);
             final Map<String, Concept> originalUUIDForConcepts = new HashMap<>();
-            conceptsFound.forEach(concept -> originalUUIDForConcepts.put(concept.getOriginalUUID(), concept));
+            conceptsFound.forEach(concept -> {
+                originalUUIDForConcepts.put(concept.getOriginalUUID(), concept);
+            });
 
             listDocuments.forEach(list -> {
                 final Document conceptDocument = (Document) list.get("concept");
-                final String originalUUID = (String) conceptDocument.get("uuid");
-                final Concept concept = originalUUIDForConcepts.get(originalUUID);
-                conceptDocument.put("uuid", concept.getUuid().toString());
-                conceptDocument.put("prefLabel", concept.getPrefLabel());
+                if (conceptDocument != null) {
+                    final String originalUUID = (String) conceptDocument.get("uuid");
+                    final Concept concept = originalUUIDForConcepts.get(originalUUID);
+
+                    if (concept != null) {
+                        conceptDocument.put("uuid", concept.getUuid().toString());
+                        conceptDocument.put("prefLabel", concept.getPrefLabel());
+                    }
+                }
             });
 
             return listDocuments;

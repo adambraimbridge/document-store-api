@@ -8,6 +8,7 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
@@ -88,11 +89,11 @@ public class MongoDocumentStoreService {
     public List<Document> filterLists(String resourceType, UUID[] conceptUUIDs, String listType, String searchTerm) {
 
         List<Bson> queryFilters = new ArrayList<>();
-        String[] conceptUUIDStrings = Arrays.asList(conceptUUIDs).stream().map(uuid -> uuid.toString())
+        UUID[] resolvedConceptUUIDs = Optional.ofNullable(conceptUUIDs).orElse(new UUID[] {});
+        String[] conceptUUIDStrings = Arrays.asList(resolvedConceptUUIDs).stream().map(uuid -> uuid.toString())
                 .toArray(String[]::new);
 
-        if (conceptUUIDs.length > 0) {
-            // todo: Filters.in
+        if (conceptUUIDStrings.length > 0) {
             Bson filterByConceptUUID = Filters.in("concept.uuid", conceptUUIDStrings);
             queryFilters.add(filterByConceptUUID);
         }
