@@ -33,7 +33,7 @@ public class PublicConcordancesApiServiceImpl implements PublicConcordancesApiSe
 
         Boolean isOK = null;
 
-        if (Response.Status.OK.getStatusCode() == response.getStatus()) {
+        if (response.getStatus() == Response.Status.OK.getStatusCode()) {
             final String payload = response.readEntity(String.class);
             JsonNode jsonNode;
             try {
@@ -51,6 +51,8 @@ public class PublicConcordancesApiServiceImpl implements PublicConcordancesApiSe
             throws JsonMappingException, JsonProcessingException {
         Response response = publicConcordancesApiClient.getConcordances(conceptUUID);
 
+        // FIXME:
+        // if (response.getStatus() == Response.Status.OK.getStatusCode()) {
         final String payload = response.readEntity(String.class);
         Concordances concordances = new ObjectMapper().readValue(payload, Concordances.class);
 
@@ -60,6 +62,7 @@ public class PublicConcordancesApiServiceImpl implements PublicConcordancesApiSe
             filteredConcordances = concordances.getConcordances().stream()
                     .filter(concordance -> concordance.getIdentifier().getAuthority().endsWith("/system/UPP"))
                     .collect(Collectors.toList());
+            // }
         }
 
         return filteredConcordances;

@@ -32,6 +32,9 @@ public class GetConcordedConceptsHandler implements Handler {
                 return UUID.fromString(splitted[splitted.length - 1]);
             }).toArray(UUID[]::new);
 
+            if (conceptUUIDs.length == 0) {
+                conceptUUIDs = new UUID[] { UUID.fromString(conceptUUID) };
+            }
             context.addParameter("conceptUUIDs", conceptUUIDs);
         } catch (final JsonProcessingException e) {
             throw ClientError.status(HttpServletResponse.SC_INTERNAL_SERVER_ERROR).error(e.getMessage()).exception();

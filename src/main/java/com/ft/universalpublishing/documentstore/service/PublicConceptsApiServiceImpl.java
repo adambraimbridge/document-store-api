@@ -1,8 +1,11 @@
 package com.ft.universalpublishing.documentstore.service;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import javax.servlet.http.HttpServletResponse;
+import javax.ws.rs.ClientErrorException;
 import javax.ws.rs.core.Response;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -48,8 +51,13 @@ public class PublicConceptsApiServiceImpl implements PublicConceptsApiService, H
     public Concept getUpToDateConcept(Concept concept) throws JsonMappingException, JsonProcessingException {
         String conceptUUID = concept.getId().getPath().split("/")[2];
         Response response = publicConceptsApiClient.getConcept(conceptUUID);
-        final String payload = response.readEntity(String.class);
-        Concept upToDateConcept = new ObjectMapper().reader().forType(Concept.class).readValue(payload);
+        Concept upToDateConcept = null;
+
+        // TODO: add client error handling
+        if (response.getStatus() == HttpServletResponse.SC_OK) {
+            final String payload = response.readEntity(String.class);
+            upToDateConcept = new ObjectMapper().reader().forType(Concept.class).readValue(payload);
+        }
 
         return upToDateConcept;
     }
@@ -57,8 +65,14 @@ public class PublicConceptsApiServiceImpl implements PublicConceptsApiService, H
     @Override
     public List<Concept> searchConcepts(String[] conceptUUIDs) throws JsonMappingException, JsonProcessingException {
         Response response = publicConceptsApiClient.searchConcepts(conceptUUIDs);
-        final String payload = response.readEntity(String.class);
-        List<Concept> concepts = Arrays.asList(new ObjectMapper().readValue(payload, Concept[].class));
+        List<Concept> concepts = new ArrayList<>();
+
+        if (response.getStatus() == HttpServletResponse.SC_OK) {
+            final String payload = response.readEntity(String.class);
+            concepts = Arrays.asList(new ObjectMapper().readValue(payload, Concept[].class));
+        } else if (response.getStatus() >= HttpServletResponse.SC_INTERNAL_SERVER_ERROR) {
+            throw new ClientErrorException(response);
+        }
 
         return concepts;
     }

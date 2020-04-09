@@ -22,21 +22,8 @@ public class PublicConcordancesApiClient {
     }
 
     public Response getConcordances(String conceptUUID) {
-        // StringBuilder urlBuilder = new
-        // StringBuilder("http://").append(host).append("/concordances?");
-        // for (int i = 0; i < conceptUUIDs.length; i++) {
-        // urlBuilder = urlBuilder.append("conceptId=").append(conceptUUIDs[i]);
-
-        // if (i > 0 && i < conceptUUIDs.length - 1) {
-        // urlBuilder = urlBuilder.append("&");
-        // }
-        // }
-
         return client.target(String.format("http://%s/concordances?conceptId=%s", host, conceptUUID))
                 .request(MediaType.APPLICATION_JSON).get();
-
-        // return
-        // client.target(urlBuilder.toString()).request(MediaType.APPLICATION_JSON).get();
     }
 
 }

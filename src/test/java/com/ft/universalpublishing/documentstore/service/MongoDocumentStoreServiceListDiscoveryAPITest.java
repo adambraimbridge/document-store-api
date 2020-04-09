@@ -93,24 +93,23 @@ public class MongoDocumentStoreServiceListDiscoveryAPITest {
                 mongoDocumentStoreService = new MongoDocumentStoreService(db, Executors.newSingleThreadExecutor());
                 mongoDocumentStoreService.applyIndexes();
                 collection = db.getCollection(DB_COLLECTION);
-                collection.insertMany(TEST_DATA);
         }
 
-        // @Test
-        // public void searchWithNoParamsAndNoListsShouldReturnEmptyArray() {
-        // UUID[] tConceptUUID = new UUID[] {};
-        // String tListType = null;
-        // String tSearchTerm = null;
+        @Test
+        public void searchWithNoParamsAndNoListsShouldReturnEmptyArray() {
+                UUID[] tConceptUUID = new UUID[] {};
+                String tListType = null;
+                String tSearchTerm = null;
 
-        // List<Document> filteredLists =
-        // mongoDocumentStoreService.filterLists(DB_COLLECTION, tConceptUUID,
-        // tListType, tSearchTerm);
+                List<Document> filteredLists = mongoDocumentStoreService.filterLists(DB_COLLECTION, tConceptUUID,
+                                tListType, tSearchTerm);
 
-        // assertThat(filteredLists.size(), is(0));
-        // }
+                assertThat(filteredLists.size(), is(0));
+        }
 
         @Test
         public void searchWithNoParamsShouldReturnAllLists() {
+                collection.insertMany(TEST_DATA);
                 UUID[] tConceptUUIDs = null;
                 String tListType = null;
                 String tSearchTerm = null;
@@ -123,6 +122,7 @@ public class MongoDocumentStoreServiceListDiscoveryAPITest {
 
         @Test
         public void searchByConceptUUIDReturnsAllListsWithThisConcept() {
+                collection.insertMany(TEST_DATA);
                 UUID[] tConceptUUIDs = new UUID[] { UUID.fromString(TEST_DATA_CONCEPT.get("conceptUUID").toString()) };
                 String tListType = null;
                 String tSearchTerm = null;
@@ -143,13 +143,11 @@ public class MongoDocumentStoreServiceListDiscoveryAPITest {
 
         @Test
         public void searchByConceptUUIDReturnsAllListsForMultipleConcepts() {
+                collection.insertMany(TEST_DATA);
                 UUID[] tConceptUUIDs = new UUID[] { UUID.fromString(TEST_DATA_CONCEPT.get("conceptUUID").toString()),
                                 UUID.fromString(TEST_DATA_TITLE.get("conceptUUID").toString()) };
                 String tListType = null;
                 String tSearchTerm = null;
-
-                Concept concept = new Concept((UUID) TEST_DATA_CONCEPT.get("conceptUUID"),
-                                (String) TEST_DATA_CONCEPT.get("conceptPrefLabel"));
 
                 List<Document> filteredLists = mongoDocumentStoreService.filterLists(DB_COLLECTION, tConceptUUIDs,
                                 tListType, tSearchTerm);
@@ -160,145 +158,128 @@ public class MongoDocumentStoreServiceListDiscoveryAPITest {
                         ContentList retrievedList = new ObjectMapper().convertValue(list, ContentList.class);
                         Assert.assertTrue(conceptUUIDsList.contains(retrievedList.getConcept().getUuid()));
                 });
-
-                // assertThat(retrievedList, is(expectedList));
+                ;
         }
 
-        // @Test
-        // public void searchByConceptUUIDReturnsEmptyArrayWhenNoMatches() {
-        // collection.insertMany(TEST_DATA);
+        @Test
+        public void searchByConceptUUIDReturnsEmptyArrayWhenNoMatches() {
+                collection.insertMany(TEST_DATA);
 
-        // String tConceptUUID = UUID.randomUUID().toString();
-        // String tListType = null;
-        // String tSearchTerm = null;
+                UUID[] tConceptUUIDs = new UUID[] { UUID.randomUUID() };
+                String tListType = null;
+                String tSearchTerm = null;
 
-        // List<Document> filteredLists =
-        // mongoDocumentStoreService.filterLists(DB_COLLECTION, tConceptUUID, tListType,
-        // tSearchTerm);
+                List<Document> filteredLists = mongoDocumentStoreService.filterLists(DB_COLLECTION, tConceptUUIDs,
+                                tListType, tSearchTerm);
 
-        // assertThat(filteredLists.size(), is(0));
-        // }
+                assertThat(filteredLists.size(), is(0));
+        }
 
-        // @Test
-        // public void searchByListTypeReturnsAllListsWithThisListType() {
-        // collection.insertMany(TEST_DATA);
+        @Test
+        public void searchByListTypeReturnsAllListsWithThisListType() {
+                collection.insertMany(TEST_DATA);
 
-        // String tConceptUUID = null;
-        // String tListType = TEST_DATA_LIST_TYPE.get("listType").toString();
-        // String tSearchTerm = null;
+                UUID[] tConceptUUIDs = null;
+                String tListType = TEST_DATA_LIST_TYPE.get("listType").toString();
+                String tSearchTerm = null;
 
-        // Concept concept = new Concept((UUID) TEST_DATA_LIST_TYPE.get("conceptUUID"),
-        // (String) TEST_DATA_LIST_TYPE.get("conceptPrefLabel"));
+                Concept concept = new Concept((UUID) TEST_DATA_LIST_TYPE.get("conceptUUID"),
+                                (String) TEST_DATA_LIST_TYPE.get("conceptPrefLabel"));
 
-        // ContentList expectedList = new ContentList.Builder().withUuid((UUID)
-        // TEST_DATA_LIST_TYPE.get("uuid"))
-        // .withTitle((String) TEST_DATA_LIST_TYPE.get("title")).withConcept(concept)
-        // .withListType((String) TEST_DATA_LIST_TYPE.get("listType")).build();
+                ContentList expectedList = new ContentList.Builder().withUuid((UUID) TEST_DATA_LIST_TYPE.get("uuid"))
+                                .withTitle((String) TEST_DATA_LIST_TYPE.get("title")).withConcept(concept)
+                                .withListType((String) TEST_DATA_LIST_TYPE.get("listType")).build();
 
-        // List<Document> filteredLists =
-        // mongoDocumentStoreService.filterLists(DB_COLLECTION, tConceptUUID, tListType,
-        // tSearchTerm);
-        // ContentList retrievedList = new
-        // ObjectMapper().convertValue(filteredLists.get(0), ContentList.class);
+                List<Document> filteredLists = mongoDocumentStoreService.filterLists(DB_COLLECTION, tConceptUUIDs,
+                                tListType, tSearchTerm);
+                ContentList retrievedList = new ObjectMapper().convertValue(filteredLists.get(0), ContentList.class);
 
-        // assertThat(retrievedList, is(expectedList));
-        // }
+                assertThat(retrievedList, is(expectedList));
+        }
 
-        // @Test
-        // public void searchByListTypeReturnsEmptyArrayWhenNoMatches() {
-        // collection.insertMany(TEST_DATA);
+        @Test
+        public void searchByListTypeReturnsEmptyArrayWhenNoMatches() {
+                collection.insertMany(TEST_DATA);
 
-        // String tConceptUUID = null;
-        // String tListType = "NonExistent";
-        // String tSearchTerm = null;
+                UUID[] tConceptUUIDs = new UUID[] {};
+                String tListType = "NonExistent";
+                String tSearchTerm = null;
 
-        // List<Document> filteredLists =
-        // mongoDocumentStoreService.filterLists(DB_COLLECTION, tConceptUUID, tListType,
-        // tSearchTerm);
+                List<Document> filteredLists = mongoDocumentStoreService.filterLists(DB_COLLECTION, tConceptUUIDs,
+                                tListType, tSearchTerm);
 
-        // assertThat(filteredLists.size(), is(0));
-        // }
+                assertThat(filteredLists.size(), is(0));
+        }
 
-        // @Test
-        // public void searchBySearchTermReturnsAllListsWithThisTermInTitle() {
-        // collection.insertMany(TEST_DATA);
+        @Test
+        public void searchBySearchTermReturnsAllListsWithThisTermInTitle() {
+                collection.insertMany(TEST_DATA);
 
-        // String tConceptUUID = null;
-        // String tListType = null;
-        // String tSearchTerm = "LookFor";
+                UUID[] tConceptUUIDs = null;
+                String tListType = null;
+                String tSearchTerm = "LookFor";
 
-        // Concept concept = new Concept((UUID) TEST_DATA_TITLE.get("conceptUUID"),
-        // (String) TEST_DATA_TITLE.get("conceptPrefLabel"));
+                Concept concept = new Concept((UUID) TEST_DATA_TITLE.get("conceptUUID"),
+                                (String) TEST_DATA_TITLE.get("conceptPrefLabel"));
 
-        // ContentList expectedList = new ContentList.Builder().withUuid((UUID)
-        // TEST_DATA_TITLE.get("uuid"))
-        // .withTitle((String) TEST_DATA_TITLE.get("title")).withConcept(concept)
-        // .withListType((String) TEST_DATA_TITLE.get("listType")).build();
+                ContentList expectedList = new ContentList.Builder().withUuid((UUID) TEST_DATA_TITLE.get("uuid"))
+                                .withTitle((String) TEST_DATA_TITLE.get("title")).withConcept(concept)
+                                .withListType((String) TEST_DATA_TITLE.get("listType")).build();
 
-        // List<Document> filteredLists =
-        // mongoDocumentStoreService.filterLists(DB_COLLECTION, tConceptUUID, tListType,
-        // tSearchTerm);
-        // ContentList retrievedList = new
-        // ObjectMapper().convertValue(filteredLists.get(0), ContentList.class);
+                List<Document> filteredLists = mongoDocumentStoreService.filterLists(DB_COLLECTION, tConceptUUIDs,
+                                tListType, tSearchTerm);
+                ContentList retrievedList = new ObjectMapper().convertValue(filteredLists.get(0), ContentList.class);
 
-        // assertThat(retrievedList, is(expectedList));
-        // }
+                assertThat(retrievedList, is(expectedList));
+        }
 
-        // @Test
-        // public void searchBySearchTermReturnsEmptyArrayWhenNoMatches() {
-        // collection.insertMany(TEST_DATA);
+        @Test
+        public void searchBySearchTermReturnsEmptyArrayWhenNoMatches() {
+                collection.insertMany(TEST_DATA);
 
-        // String tConceptUUID = null;
-        // String tListType = null;
-        // String tSearchTerm = "NonExistent";
+                UUID[] tConceptUUIDs = null;
+                String tListType = null;
+                String tSearchTerm = "NonExistent";
 
-        // List<Document> filteredLists =
-        // mongoDocumentStoreService.filterLists(DB_COLLECTION, tConceptUUID, tListType,
-        // tSearchTerm);
+                List<Document> filteredLists = mongoDocumentStoreService.filterLists(DB_COLLECTION, tConceptUUIDs,
+                                tListType, tSearchTerm);
 
-        // assertThat(filteredLists.size(), is(0));
-        // }
+                assertThat(filteredLists.size(), is(0));
+        }
 
-        // @Test
-        // public void
-        // searchByConceptUUIDListTypeAndSearchTermReturnsAllListsMatchingAllCriteria()
-        // {
-        // collection.insertMany(TEST_DATA);
+        @Test
+        public void searchByConceptUUIDListTypeAndSearchTermReturnsAllListsMatchingAllCriteria() {
+                collection.insertMany(TEST_DATA);
 
-        // String tConceptUUID = TEST_DATA_All.get("conceptUUID").toString();
-        // String tListType = TEST_DATA_All.get("listType").toString();
-        // String tSearchTerm = "MatchAll";
+                UUID[] tConceptUUIDs = new UUID[] { (UUID) TEST_DATA_All.get("conceptUUID") };
+                String tListType = TEST_DATA_All.get("listType").toString();
+                String tSearchTerm = "MatchAll";
 
-        // Concept concept = new Concept((UUID) TEST_DATA_All.get("conceptUUID"),
-        // (String) TEST_DATA_All.get("conceptPrefLabel"));
+                Concept concept = new Concept((UUID) TEST_DATA_All.get("conceptUUID"),
+                                (String) TEST_DATA_All.get("conceptPrefLabel"));
 
-        // ContentList expectedList = new ContentList.Builder().withUuid((UUID)
-        // TEST_DATA_All.get("uuid"))
-        // .withTitle((String) TEST_DATA_All.get("title")).withConcept(concept)
-        // .withListType((String) TEST_DATA_All.get("listType")).build();
+                ContentList expectedList = new ContentList.Builder().withUuid((UUID) TEST_DATA_All.get("uuid"))
+                                .withTitle((String) TEST_DATA_All.get("title")).withConcept(concept)
+                                .withListType((String) TEST_DATA_All.get("listType")).build();
 
-        // List<Document> filteredLists =
-        // mongoDocumentStoreService.filterLists(DB_COLLECTION, tConceptUUID, tListType,
-        // tSearchTerm);
-        // ContentList retrievedList = new
-        // ObjectMapper().convertValue(filteredLists.get(0), ContentList.class);
+                List<Document> filteredLists = mongoDocumentStoreService.filterLists(DB_COLLECTION, tConceptUUIDs,
+                                tListType, tSearchTerm);
+                ContentList retrievedList = new ObjectMapper().convertValue(filteredLists.get(0), ContentList.class);
 
-        // assertThat(retrievedList, is(expectedList));
-        // }
+                assertThat(retrievedList, is(expectedList));
+        }
 
-        // @Test
-        // public void
-        // searchByConceptUUIDListTypeAndSearchTermReturnsEmptyArrayWhenNoMatches() {
-        // collection.insertMany(TEST_DATA);
+        @Test
+        public void searchByConceptUUIDListTypeAndSearchTermReturnsEmptyArrayWhenNoMatches() {
+                collection.insertMany(TEST_DATA);
 
-        // String tConceptUUID = UUID.randomUUID().toString();
-        // String tListType = "NonExistent";
-        // String tSearchTerm = "NonExistent";
+                UUID[] tConceptUUIDs = new UUID[] { UUID.randomUUID() };
+                String tListType = "NonExistent";
+                String tSearchTerm = "NonExistent";
 
-        // List<Document> filteredLists =
-        // mongoDocumentStoreService.filterLists(DB_COLLECTION, tConceptUUID, tListType,
-        // tSearchTerm);
+                List<Document> filteredLists = mongoDocumentStoreService.filterLists(DB_COLLECTION, tConceptUUIDs,
+                                tListType, tSearchTerm);
 
-        // assertThat(filteredLists.size(), is(0));
-        // }
+                assertThat(filteredLists.size(), is(0));
+        }
 }

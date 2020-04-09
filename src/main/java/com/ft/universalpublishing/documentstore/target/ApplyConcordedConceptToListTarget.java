@@ -25,14 +25,12 @@ public class ApplyConcordedConceptToListTarget implements Target {
     public Object execute(Context context) {
         try {
             ContentList contentList = new ObjectMapper().convertValue(context.getContentMap(), ContentList.class);
+            Concept concordedConcept = publicConceptsApiService.getUpToDateConcept(contentList.getConcept());
+            contentList.setConcept(concordedConcept);
             contentList.addIds();
             contentList.addApiUrls(apiPath);
             contentList.removePrivateFields();
 
-            Concept concordedConcept = publicConceptsApiService.getUpToDateConcept(contentList.getConcept());
-            concordedConcept.setUuid(null);
-
-            contentList.setConcept(concordedConcept);
             return contentList;
         } catch (IllegalArgumentException | JsonProcessingException e) {
             throw ClientError.status(SC_INTERNAL_SERVER_ERROR).error(e.getMessage()).exception();
