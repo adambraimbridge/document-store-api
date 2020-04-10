@@ -17,6 +17,7 @@ import com.ft.platform.dropwizard.AdvancedHealthCheckBundle;
 import com.ft.platform.dropwizard.GoodToGoConfiguredBundle;
 import com.ft.universalpublishing.documentstore.clients.PublicConceptsApiClient;
 import com.ft.universalpublishing.documentstore.clients.PublicConcordancesApiClient;
+import com.ft.universalpublishing.documentstore.handler.ConceptUuidValidationHandler;
 import com.ft.universalpublishing.documentstore.handler.ContentListValidationHandler;
 import com.ft.universalpublishing.documentstore.handler.ExtractConceptHandler;
 import com.ft.universalpublishing.documentstore.handler.ExtractUuidsHandler;
@@ -140,6 +141,7 @@ public class DocumentStoreApiApplication extends Application<DocumentStoreApiCon
                 final ContentListValidator contentListValidator = new ContentListValidator(uuidValidator);
 
                 Handler uuidValidationHandler = new UuidValidationHandler(uuidValidator);
+                Handler conceptUuidValidationHandler = new ConceptUuidValidationHandler(uuidValidator);
                 Handler multipleUuidValidationHandler = new MultipleUuidValidationHandler(uuidValidator);
                 Handler extractUuidsHandlers = new ExtractUuidsHandler();
                 Handler extractConceptHandler = new ExtractConceptHandler();
@@ -216,7 +218,9 @@ public class DocumentStoreApiApplication extends Application<DocumentStoreApiCon
                                                                 findMultipleResourcesByUuidsHandler)
                                                 .setTarget(applyConcordedConceptsToLists));
                 collections.put(new Pair<>("lists", Operation.SEARCH),
-                                new HandlerChain().addHandlers(getConcordedConceptsHandler, getSearchResultsHandler)
+                                new HandlerChain()
+                                                .addHandlers(conceptUuidValidationHandler, getConcordedConceptsHandler,
+                                                                getSearchResultsHandler)
                                                 .setTarget(applyConcordedConceptsToLists));
                 collections.put(new Pair<>("lists", Operation.ADD),
                                 new HandlerChain().addHandlers(uuidValidationHandler, contentListValidationHandler)
@@ -238,7 +242,9 @@ public class DocumentStoreApiApplication extends Application<DocumentStoreApiCon
                                                                 findMultipleResourcesByUuidsHandler)
                                                 .setTarget(applyConcordedConceptsToLists));
                 collections.put(new Pair<>("generic-lists", Operation.SEARCH),
-                                new HandlerChain().addHandlers(getConcordedConceptsHandler, getSearchResultsHandler)
+                                new HandlerChain()
+                                                .addHandlers(conceptUuidValidationHandler, getConcordedConceptsHandler,
+                                                                getSearchResultsHandler)
                                                 .setTarget(applyConcordedConceptsToLists));
                 collections.put(new Pair<>("generic-lists", Operation.ADD),
                                 new HandlerChain().addHandlers(uuidValidationHandler).setTarget(writeDocument));

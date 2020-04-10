@@ -39,4 +39,15 @@ public class Concept {
         return MoreObjects.toStringHelper(this).add("id", id).add("uuid", uuid).add("apiUrl", apiUrl)
                 .add("prefLabel", prefLabel).add("originalUUID", originalUUID).toString();
     }
+
+    public String extractConceptUuid() {
+        String uuidString = null;
+        if (uuid != null) {
+            uuidString = uuid.toString();
+        } else if (id != null) {
+            uuidString = id.getPath().split("/")[2];
+        }
+
+        return uuidString;
+    }
 }

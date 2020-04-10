@@ -28,8 +28,8 @@ public class ApplyConcordedConceptToListTarget implements Target {
             Concept concept = contentList.getConcept();
             String conceptUUID = null;
 
-            if (concept != null && concept.getId() != null) {
-                conceptUUID = concept.getId().getPath().split("/")[2];
+            if (concept != null) {
+                conceptUUID = concept.extractConceptUuid();
             }
 
             Concept concordedConcept = publicConceptsApiService.getUpToDateConcept(conceptUUID);

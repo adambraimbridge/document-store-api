@@ -206,7 +206,7 @@ public class DocumentListResourceEndpointTest {
 
     @Test
     public void shouldReturn400OnWriteWhenUuidNotValid() {
-        doThrow(new ValidationException("Invalid Uuid")).when(uuidValidator).validate(anyString());
+        doThrow(new ValidationException("Invalid Uuid")).when(uuidValidator).validate(anyString(), anyString());
         Response clientResponse = writeDocument(uuidPath, listAsDocument);
 
         assertThat("response", clientResponse, hasProperty("status", equalTo(400)));
@@ -254,7 +254,7 @@ public class DocumentListResourceEndpointTest {
 
     @Test
     public void shouldReturn400OnDeleteWhenUuidNotValid() {
-        doThrow(new ValidationException("Invalid Uuid")).when(uuidValidator).validate(anyString());
+        doThrow(new ValidationException("Invalid Uuid")).when(uuidValidator).validate(anyString(), anyString());
         Response clientResponse = resources.client().target(uuidPath).request().delete();
 
         assertThat("response", clientResponse, hasProperty("status", equalTo(400)));
@@ -320,7 +320,7 @@ public class DocumentListResourceEndpointTest {
 
     @Test
     public void shouldReturn400OnReadWhenUuidNotValid() {
-        doThrow(new ValidationException("Invalid Uuid")).when(uuidValidator).validate(anyString());
+        doThrow(new ValidationException("Invalid Uuid")).when(uuidValidator).validate(anyString(), anyString());
         Response clientResponse = resources.client().target(uuidPath).request().get();
 
         assertThat("response", clientResponse, hasProperty("status", equalTo(400)));

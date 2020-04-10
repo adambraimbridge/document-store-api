@@ -152,7 +152,7 @@ public class DocumentContentResourceEndpointTest {
 
     @Test
     public void shouldReturn400OnWriteWhenUuidNotValid() {
-        doThrow(new ValidationException("Invalid Uuid")).when(uuidValidator).validate(anyString());
+        doThrow(new ValidationException("Invalid Uuid")).when(uuidValidator).validate(anyString(), anyString());
         Response clientResponse = writeDocument(contentPath, document);
 
         assertThat("response", clientResponse, Matchers.hasProperty("status", Matchers.equalTo(400)));
@@ -222,7 +222,7 @@ public class DocumentContentResourceEndpointTest {
 
     @Test
     public void shouldReturn400OnDeleteWhenUuidNotValid() {
-        doThrow(new ValidationException("Invalid Uuid")).when(uuidValidator).validate(anyString());
+        doThrow(new ValidationException("Invalid Uuid")).when(uuidValidator).validate(anyString(), anyString());
         Response clientResponse = resources.target(contentPath).request().delete();
 
         assertThat("response", clientResponse, Matchers.hasProperty("status", Matchers.equalTo(400)));
@@ -450,7 +450,7 @@ public class DocumentContentResourceEndpointTest {
 
     @Test
     public void shouldReturn400OnReadWhenUuidNotValid() {
-        doThrow(new ValidationException("Invalid Uuid")).when(uuidValidator).validate(anyString());
+        doThrow(new ValidationException("Invalid Uuid")).when(uuidValidator).validate(anyString(), anyString());
         Response clientResponse = resources.target(contentPath).request().get(Response.class);
 
         assertThat("response", clientResponse, Matchers.hasProperty("status", Matchers.equalTo(400)));
