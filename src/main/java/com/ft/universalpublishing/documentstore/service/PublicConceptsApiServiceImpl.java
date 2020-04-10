@@ -39,7 +39,7 @@ public class PublicConceptsApiServiceImpl implements PublicConceptsApiService, H
             JsonNode jsonNode;
             try {
                 jsonNode = new ObjectMapper().readValue(payload, JsonNode.class);
-                isOK = jsonNode.at("/checks/0/ok").asBoolean();
+                isOK = jsonNode.at("/ok").asBoolean();
             } catch (final JsonProcessingException e) {
                 isOK = false;
             }
@@ -48,12 +48,11 @@ public class PublicConceptsApiServiceImpl implements PublicConceptsApiService, H
     }
 
     @Override
-    public Concept getUpToDateConcept(Concept concept) throws JsonMappingException, JsonProcessingException {
-        if (concept == null) {
+    public Concept getUpToDateConcept(String conceptUUID) throws JsonMappingException, JsonProcessingException {
+        if (conceptUUID == null || conceptUUID.isEmpty()) {
             return null;
         }
 
-        String conceptUUID = concept.getId().getPath().split("/")[2];
         Response response = publicConceptsApiClient.getConcept(conceptUUID);
         Concept upToDateConcept = null;
 

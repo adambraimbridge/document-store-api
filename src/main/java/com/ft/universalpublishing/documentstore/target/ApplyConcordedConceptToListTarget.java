@@ -25,7 +25,14 @@ public class ApplyConcordedConceptToListTarget implements Target {
     public Object execute(Context context) {
         try {
             ContentList contentList = new ObjectMapper().convertValue(context.getContentMap(), ContentList.class);
-            Concept concordedConcept = publicConceptsApiService.getUpToDateConcept(contentList.getConcept());
+            Concept concept = contentList.getConcept();
+            String conceptUUID = null;
+
+            if (concept != null && concept.getId() != null) {
+                conceptUUID = concept.getId().getPath().split("/")[2];
+            }
+
+            Concept concordedConcept = publicConceptsApiService.getUpToDateConcept(conceptUUID);
             contentList.setConcept(concordedConcept);
             contentList.addIds();
             contentList.addApiUrls(apiPath);

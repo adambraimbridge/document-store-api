@@ -13,6 +13,7 @@ import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -144,7 +145,10 @@ public class DocumentListResourceEndpointTest {
         ContentList.Builder builder = new ContentList.Builder().withUuid(UUID.fromString(listUuid)).withItems(content);
 
         if (addConcept) {
-            builder.withConcept(new Concept(CONCEPT_UUID, CONCEPT_PREF_LABEL));
+            Concept concept = new Concept(CONCEPT_UUID, CONCEPT_PREF_LABEL);
+            URI id = URI.create(String.format("http://api.ft.com/things/%s", concept.getUuid()));
+            concept.setId(id);
+            builder.withConcept(concept);
         }
 
         return builder.build();
@@ -273,15 +277,17 @@ public class DocumentListResourceEndpointTest {
         Map conceptDocument = (Map) listAsDocument.get("concept");
         Concept concept = new Concept(UUID.fromString(conceptDocument.get("uuid").toString()),
                 conceptDocument.get("prefLabel").toString());
+        URI id = URI.create(String.format("http://api.ft.com/things/%s", concept.getUuid()));
+        concept.setId(id);
         Concept resultConcept = objectMapper.readValue(objectMapper.writeValueAsString(concept), Concept.class);
 
-        when(publicConceptsApiService.getUpToDateConcept(eq(concept))).thenReturn(resultConcept);
+        when(publicConceptsApiService.getUpToDateConcept(eq(concept.getUuid().toString()))).thenReturn(resultConcept);
         when(documentStoreService.findByUuid(eq(RESOURCE_TYPE), any(UUID.class))).thenReturn(listAsDocument);
         Response clientResponse = resources.client().target(uuidPath).request().get();
 
         assertThat("response", clientResponse, hasProperty("status", equalTo(200)));
         final ContentList retrievedDocument = clientResponse.readEntity(ContentList.class);
-        verify(publicConceptsApiService).getUpToDateConcept(eq(concept));
+        verify(publicConceptsApiService).getUpToDateConcept(eq(concept.getUuid().toString()));
         verify(documentStoreService).findByUuid(eq(RESOURCE_TYPE), any(UUID.class));
         assertThat("inboundListAsDocument", retrievedDocument, equalTo(outboundList));
     }
@@ -339,20 +345,22 @@ public class DocumentListResourceEndpointTest {
 
         List<Concordance> concordances = new ArrayList<>();
         Concept concept = new Concept(CONCEPT_UUID, CONCEPT.getPrefLabel());
+        URI id = URI.create(String.format("http://api.ft.com/things/%s", concept.getUuid()));
+        concept.setId(id);
         concordances
                 .add(new Concordance(concept, new Identifier("http://api.ft.com/system/UPP", CONCEPT_UUID.toString())));
         Concept resultConcept = objectMapper.readValue(objectMapper.writeValueAsString(concept), Concept.class);
         when(publicConcordancesApiService.getUPPConcordances(eq(CONCEPT_UUID.toString()))).thenReturn(concordances);
         when(documentStoreService.findByConceptAndType(eq(RESOURCE_TYPE), eq(CONCEPT_UUIDS), eq(type)))
                 .thenReturn(listAsDocument);
-        when(publicConceptsApiService.getUpToDateConcept(eq(concept))).thenReturn(resultConcept);
+        when(publicConceptsApiService.getUpToDateConcept(eq(concept.getUuid().toString()))).thenReturn(resultConcept);
 
         Response clientResponse = resources.client().target("/lists").queryParam(typeParam, CONCEPT_UUID.toString())
                 .request().get();
 
         assertThat("response", clientResponse, hasProperty("status", equalTo(200)));
         final ContentList retrievedDocument = clientResponse.readEntity(ContentList.class);
-        verify(publicConceptsApiService).getUpToDateConcept(eq(concept));
+        verify(publicConceptsApiService).getUpToDateConcept(eq(concept.getUuid().toString()));
         verify(publicConcordancesApiService).getUPPConcordances(eq(CONCEPT_UUID.toString()));
         verify(documentStoreService).findByConceptAndType(eq(RESOURCE_TYPE), eq(CONCEPT_UUIDS), eq(type));
         assertThat("documents were not the same", retrievedDocument, equalTo(outboundList));
