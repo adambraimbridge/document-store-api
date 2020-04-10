@@ -49,11 +49,14 @@ public class PublicConceptsApiServiceImpl implements PublicConceptsApiService, H
 
     @Override
     public Concept getUpToDateConcept(Concept concept) throws JsonMappingException, JsonProcessingException {
+        if (concept == null) {
+            return null;
+        }
+
         String conceptUUID = concept.getId().getPath().split("/")[2];
         Response response = publicConceptsApiClient.getConcept(conceptUUID);
         Concept upToDateConcept = null;
 
-        // TODO: add client error handling
         if (response.getStatus() == HttpServletResponse.SC_OK) {
             final String payload = response.readEntity(String.class);
             upToDateConcept = new ObjectMapper().reader().forType(Concept.class).readValue(payload);
@@ -64,8 +67,13 @@ public class PublicConceptsApiServiceImpl implements PublicConceptsApiService, H
 
     @Override
     public List<Concept> searchConcepts(String[] conceptUUIDs) throws JsonMappingException, JsonProcessingException {
-        Response response = publicConceptsApiClient.searchConcepts(conceptUUIDs);
         List<Concept> concepts = new ArrayList<>();
+
+        if (conceptUUIDs == null || conceptUUIDs.length == 0) {
+            return concepts;
+        }
+
+        Response response = publicConceptsApiClient.searchConcepts(conceptUUIDs);
 
         if (response.getStatus() == HttpServletResponse.SC_OK) {
             final String payload = response.readEntity(String.class);

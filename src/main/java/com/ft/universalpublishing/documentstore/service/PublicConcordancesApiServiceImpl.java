@@ -19,9 +19,6 @@ import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 
-/**
- * PublicConceptsApiServiceImpl
- */
 @RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class PublicConcordancesApiServiceImpl implements PublicConcordancesApiService, HealthcheckService {
@@ -49,20 +46,24 @@ public class PublicConcordancesApiServiceImpl implements PublicConcordancesApiSe
     @Override
     public List<Concordance> getUPPConcordances(String conceptUUID)
             throws JsonMappingException, JsonProcessingException {
+        List<Concordance> filteredConcordances = new ArrayList<>();
+
+        if (conceptUUID == null || conceptUUID.isEmpty()) {
+            return filteredConcordances;
+        }
+
         Response response = publicConcordancesApiClient.getConcordances(conceptUUID);
 
-        // FIXME:
-        // if (response.getStatus() == Response.Status.OK.getStatusCode()) {
-        final String payload = response.readEntity(String.class);
-        Concordances concordances = new ObjectMapper().readValue(payload, Concordances.class);
+        if (response.getStatus() == Response.Status.OK.getStatusCode()) {
+            final String payload = response.readEntity(String.class);
+            Concordances concordances = new ObjectMapper().readValue(payload, Concordances.class);
 
-        List<Concordance> filteredConcordances = new ArrayList<>();
-        if (concordances != null && concordances.getConcordances() != null) {
-            // get only concordances that have UPP-compliant UUIDs
-            filteredConcordances = concordances.getConcordances().stream()
-                    .filter(concordance -> concordance.getIdentifier().getAuthority().endsWith("/system/UPP"))
-                    .collect(Collectors.toList());
-            // }
+            if (concordances != null && concordances.getConcordances() != null) {
+                // get only concordances that have UPP-compliant UUIDs
+                filteredConcordances = concordances.getConcordances().stream()
+                        .filter(concordance -> concordance.getIdentifier().getAuthority().endsWith("/system/UPP"))
+                        .collect(Collectors.toList());
+            }
         }
 
         return filteredConcordances;
