@@ -13,6 +13,16 @@ import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+
+import javax.ws.rs.client.Entity;
+import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response;
+
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -47,429 +57,367 @@ import com.ft.universalpublishing.documentstore.validators.ContentListValidator;
 import com.ft.universalpublishing.documentstore.validators.UuidValidator;
 import com.ft.universalpublishing.documentstore.write.DocumentWritten;
 import com.google.common.collect.ImmutableList;
-import io.dropwizard.testing.junit5.DropwizardExtensionsSupport;
-import io.dropwizard.testing.junit5.ResourceExtension;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
-import javax.ws.rs.client.Entity;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
+
 import org.bson.Document;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
+import io.dropwizard.testing.junit5.DropwizardExtensionsSupport;
+import io.dropwizard.testing.junit5.ResourceExtension;
+
 @ExtendWith(DropwizardExtensionsSupport.class)
 public class DocumentListResourceEndpointTest {
-  private static final MongoDocumentStoreService documentStoreService =
-      mock(MongoDocumentStoreService.class);
-  private static final PublicConceptsApiService publicConceptsApiService =
-      mock(PublicConceptsApiService.class);
-  private static final PublicConcordancesApiService publicConcordancesApiService =
-      mock(PublicConcordancesApiService.class);
-  private static final ContentListValidator contentListValidator = mock(ContentListValidator.class);
-  private static final UuidValidator uuidValidator = mock(UuidValidator.class);
-  private static final String API_URL_PREFIX_CONTENT = "localhost";
-  private static final String RESOURCE_TYPE = "lists";
-  private static final UUID CONCEPT_UUID = UUID.randomUUID();
-  private static final UUID[] CONCEPT_UUIDS = new UUID[] {CONCEPT_UUID};
-  private static final String CONCEPT_PREF_LABEL = "World";
-  private static final ObjectMapper objectMapper = new ObjectMapper();
-  private static final Concept CONCEPT = new Concept(CONCEPT_UUID, CONCEPT_PREF_LABEL);
+    private final static MongoDocumentStoreService documentStoreService = mock(MongoDocumentStoreService.class);
+    private final static PublicConceptsApiService publicConceptsApiService = mock(PublicConceptsApiService.class);
+    private final static PublicConcordancesApiService publicConcordancesApiService = mock(
+            PublicConcordancesApiService.class);
+    private final static ContentListValidator contentListValidator = mock(ContentListValidator.class);
+    private final static UuidValidator uuidValidator = mock(UuidValidator.class);
+    private static final String API_URL_PREFIX_CONTENT = "localhost";
+    private static final String RESOURCE_TYPE = "lists";
+    private static final UUID CONCEPT_UUID = UUID.randomUUID();
+    private static final UUID[] CONCEPT_UUIDS = new UUID[] { CONCEPT_UUID };
+    private static final String CONCEPT_PREF_LABEL = "World";
+    private static final ObjectMapper objectMapper = new ObjectMapper();
+    private static final Concept CONCEPT = new Concept(CONCEPT_UUID, CONCEPT_PREF_LABEL);
 
-  private static final ResourceExtension resources =
-      ResourceExtension.builder().addResource(new DocumentResource(getCollectionMap())).build();
+    private static final ResourceExtension resources = ResourceExtension.builder()
+            .addResource(new DocumentResource(getCollectionMap())).build();
 
-  private String uuid;
-  private Document listAsDocument;
-  private Document listWithoutConceptAsDocument;
-  private ContentList outboundList;
-  private ContentList outboundListWithoutConcept;
-  private String uuidPath;
+    private String uuid;
+    private Document listAsDocument;
+    private Document listWithoutConceptAsDocument;
+    private ContentList outboundList;
+    private ContentList outboundListWithoutConcept;
+    private String uuidPath;
 
-  @SuppressWarnings("unchecked")
-  public DocumentListResourceEndpointTest() {
-    this.uuid = UUID.randomUUID().toString();
-    ContentList contentList =
-        getContentList(uuid, UUID.randomUUID().toString(), UUID.randomUUID().toString(), true);
-    this.listAsDocument = new Document(objectMapper.convertValue(contentList, Map.class));
-    this.outboundList = getOutboundContentList(contentList, true);
+    @SuppressWarnings("unchecked")
+    public DocumentListResourceEndpointTest() {
+        this.uuid = UUID.randomUUID().toString();
+        ContentList contentList = getContentList(uuid, UUID.randomUUID().toString(), UUID.randomUUID().toString(),
+                true);
+        this.listAsDocument = new Document(objectMapper.convertValue(contentList, Map.class));
+        this.outboundList = getOutboundContentList(contentList, true);
 
-    ContentList contentListWithoutConcept =
-        getContentListWithoutConcept(
-            uuid, UUID.randomUUID().toString(), UUID.randomUUID().toString());
-    this.listWithoutConceptAsDocument =
-        new Document(objectMapper.convertValue(contentListWithoutConcept, Map.class));
-    this.outboundListWithoutConcept = getOutboundContentList(contentListWithoutConcept, false);
-    this.uuidPath = "/" + RESOURCE_TYPE + "/" + uuid;
-  }
-
-  private static Map<Pair<String, Operation>, HandlerChain> getCollectionMap() {
-    Handler uuidValidationHandler = new UuidValidationHandler(uuidValidator);
-    Handler extractConceptHandler = new ExtractConceptHandler();
-    Handler contentListValidationHandler = new ContentListValidationHandler(contentListValidator);
-    Handler findListByUuidHandler = new FindListByUuidHandler(documentStoreService);
-    Handler findListByConceptAndTypeHandler =
-        new FindListByConceptAndTypeHandler(documentStoreService);
-    Handler getConcordedConceptsHandler =
-        new GetConcordedConceptsHandler(publicConcordancesApiService);
-    Target writeDocument = new WriteDocumentTarget(documentStoreService);
-    Target deleteDocument = new DeleteDocumentTarget(documentStoreService);
-    Target applyConcordedConceptToList =
-        new ApplyConcordedConceptToListTarget(publicConceptsApiService, API_URL_PREFIX_CONTENT);
-    final Map<Pair<String, Operation>, HandlerChain> collections = new HashMap<>();
-    collections.put(
-        new Pair<>("lists", Operation.GET_BY_ID),
-        new HandlerChain()
-            .addHandlers(uuidValidationHandler, findListByUuidHandler)
-            .setTarget(applyConcordedConceptToList));
-    collections.put(
-        new Pair<>("lists", Operation.GET_FILTERED),
-        new HandlerChain()
-            .addHandlers(
-                extractConceptHandler, getConcordedConceptsHandler, findListByConceptAndTypeHandler)
-            .setTarget(applyConcordedConceptToList));
-    collections.put(
-        new Pair<>("lists", Operation.ADD),
-        new HandlerChain()
-            .addHandlers(uuidValidationHandler, contentListValidationHandler)
-            .setTarget(writeDocument));
-    collections.put(
-        new Pair<>("lists", Operation.REMOVE),
-        new HandlerChain().addHandlers(uuidValidationHandler).setTarget(deleteDocument));
-
-    return collections;
-  }
-
-  private static ContentList getContentList(
-      String listUuid, String firstContentUuid, String secondContentUuid, boolean addConcept) {
-    ListItem contentItem1 = new ListItem();
-    contentItem1.setUuid(firstContentUuid);
-    ListItem contentItem2 = new ListItem();
-    contentItem2.setUuid(secondContentUuid);
-    List<ListItem> content = ImmutableList.of(contentItem1, contentItem2);
-
-    ContentList.Builder builder =
-        new ContentList.Builder().withUuid(UUID.fromString(listUuid)).withItems(content);
-
-    if (addConcept) {
-      builder.withConcept(new Concept(CONCEPT_UUID, CONCEPT_PREF_LABEL));
+        ContentList contentListWithoutConcept = getContentListWithoutConcept(uuid, UUID.randomUUID().toString(),
+                UUID.randomUUID().toString());
+        this.listWithoutConceptAsDocument = new Document(
+                objectMapper.convertValue(contentListWithoutConcept, Map.class));
+        this.outboundListWithoutConcept = getOutboundContentList(contentListWithoutConcept, false);
+        this.uuidPath = "/" + RESOURCE_TYPE + "/" + uuid;
     }
 
-    return builder.build();
-  }
+    private static Map<Pair<String, Operation>, HandlerChain> getCollectionMap() {
+        Handler uuidValidationHandler = new UuidValidationHandler(uuidValidator);
+        Handler extractConceptHandler = new ExtractConceptHandler();
+        Handler contentListValidationHandler = new ContentListValidationHandler(contentListValidator);
+        Handler findListByUuidHandler = new FindListByUuidHandler(documentStoreService);
+        Handler findListByConceptAndTypeHandler = new FindListByConceptAndTypeHandler(documentStoreService);
+        Handler getConcordedConceptsHandler = new GetConcordedConceptsHandler(publicConcordancesApiService);
+        Target writeDocument = new WriteDocumentTarget(documentStoreService);
+        Target deleteDocument = new DeleteDocumentTarget(documentStoreService);
+        Target applyConcordedConceptToList = new ApplyConcordedConceptToListTarget(publicConceptsApiService,
+                API_URL_PREFIX_CONTENT);
+        final Map<Pair<String, Operation>, HandlerChain> collections = new HashMap<>();
+        collections.put(new Pair<>("lists", Operation.GET_BY_ID), new HandlerChain()
+                .addHandlers(uuidValidationHandler, findListByUuidHandler).setTarget(applyConcordedConceptToList));
+        collections.put(new Pair<>("lists", Operation.GET_FILTERED), new HandlerChain()
+                .addHandlers(extractConceptHandler, getConcordedConceptsHandler, findListByConceptAndTypeHandler)
+                .setTarget(applyConcordedConceptToList));
+        collections.put(new Pair<>("lists", Operation.ADD), new HandlerChain()
+                .addHandlers(uuidValidationHandler, contentListValidationHandler).setTarget(writeDocument));
+        collections.put(new Pair<>("lists", Operation.REMOVE),
+                new HandlerChain().addHandlers(uuidValidationHandler).setTarget(deleteDocument));
 
-  private static ContentList getContentListWithoutConcept(
-      String listUuid, String firstContentUuid, String secondContentUuid) {
-    ListItem contentItem1 = new ListItem();
-    contentItem1.setUuid(firstContentUuid);
-    ListItem contentItem2 = new ListItem();
-    contentItem2.setUuid(secondContentUuid);
-    List<ListItem> content = ImmutableList.of(contentItem1, contentItem2);
+        return collections;
+    }
 
-    return new ContentList.Builder().withUuid(UUID.fromString(listUuid)).withItems(content).build();
-  }
+    private static ContentList getContentList(String listUuid, String firstContentUuid, String secondContentUuid,
+            boolean addConcept) {
+        ListItem contentItem1 = new ListItem();
+        contentItem1.setUuid(firstContentUuid);
+        ListItem contentItem2 = new ListItem();
+        contentItem2.setUuid(secondContentUuid);
+        List<ListItem> content = ImmutableList.of(contentItem1, contentItem2);
 
-  private static ContentList getOutboundContentList(ContentList contentList, boolean addConcept) {
-    ContentList outboundList =
-        getContentList(
-            contentList.getUuid(),
-            contentList.getItems().get(0).getUuid(),
-            contentList.getItems().get(1).getUuid(),
-            addConcept);
+        ContentList.Builder builder = new ContentList.Builder().withUuid(UUID.fromString(listUuid)).withItems(content);
 
-    outboundList.addIds();
-    outboundList.addApiUrls(API_URL_PREFIX_CONTENT);
-    outboundList.removePrivateFields();
-    return outboundList;
-  }
+        if (addConcept) {
+            builder.withConcept(new Concept(CONCEPT_UUID, CONCEPT_PREF_LABEL));
+        }
 
-  @BeforeEach
-  public void setup() {
-    reset(documentStoreService);
-    reset(publicConceptsApiService);
-    reset(publicConcordancesApiService);
-    reset(contentListValidator);
-    reset(uuidValidator);
-    when(documentStoreService.write(eq(RESOURCE_TYPE), anyMapOf(String.class, Object.class)))
-        .thenReturn(DocumentWritten.created(listAsDocument));
-  }
+        return builder.build();
+    }
 
-  // WRITE
+    private static ContentList getContentListWithoutConcept(String listUuid, String firstContentUuid,
+            String secondContentUuid) {
+        ListItem contentItem1 = new ListItem();
+        contentItem1.setUuid(firstContentUuid);
+        ListItem contentItem2 = new ListItem();
+        contentItem2.setUuid(secondContentUuid);
+        List<ListItem> content = ImmutableList.of(contentItem1, contentItem2);
 
-  @Test
-  public void shouldReturn201ForNewDocument() {
-    Response clientResponse = writeDocument(uuidPath, listAsDocument);
-    assertThat("response", clientResponse, hasProperty("status", equalTo(201)));
-    verify(documentStoreService).write(eq(RESOURCE_TYPE), anyMapOf(String.class, Object.class));
-  }
+        return new ContentList.Builder().withUuid(UUID.fromString(listUuid)).withItems(content).build();
+    }
 
-  @Test
-  public void shouldReturn200ForUpdatedContent() {
-    when(documentStoreService.write(eq(RESOURCE_TYPE), anyMapOf(String.class, Object.class)))
-        .thenReturn(DocumentWritten.updated(listAsDocument));
+    private static ContentList getOutboundContentList(ContentList contentList, boolean addConcept) {
+        ContentList outboundList = getContentList(contentList.getUuid(), contentList.getItems().get(0).getUuid(),
+                contentList.getItems().get(1).getUuid(), addConcept);
 
-    Response clientResponse = writeDocument(uuidPath, listAsDocument);
-    assertThat("response", clientResponse, hasProperty("status", equalTo(200)));
-  }
+        outboundList.addIds();
+        outboundList.addApiUrls(API_URL_PREFIX_CONTENT);
+        outboundList.removePrivateFields();
+        return outboundList;
+    }
 
-  @Test
-  public void shouldReturn400OnWriteWhenUuidNotValid() {
-    doThrow(new ValidationException("Invalid Uuid")).when(uuidValidator).validate(anyString());
-    Response clientResponse = writeDocument(uuidPath, listAsDocument);
+    @BeforeEach
+    public void setup() {
+        reset(documentStoreService);
+        reset(publicConceptsApiService);
+        reset(publicConcordancesApiService);
+        reset(contentListValidator);
+        reset(uuidValidator);
+        when(documentStoreService.write(eq(RESOURCE_TYPE), anyMapOf(String.class, Object.class)))
+                .thenReturn(DocumentWritten.created(listAsDocument));
+    }
 
-    assertThat("response", clientResponse, hasProperty("status", equalTo(400)));
-    validateErrorMessage("Invalid Uuid", clientResponse);
-  }
+    // WRITE
 
-  @Test
-  public void shouldReturn503WhenCannotAccessExternalSystem() {
-    when(documentStoreService.write(eq(RESOURCE_TYPE), any()))
-        .thenThrow(new ExternalSystemUnavailableException("Cannot connect to Mongo"));
+    @Test
+    public void shouldReturn201ForNewDocument() {
+        Response clientResponse = writeDocument(uuidPath, listAsDocument);
+        assertThat("response", clientResponse, hasProperty("status", equalTo(201)));
+        verify(documentStoreService).write(eq(RESOURCE_TYPE), anyMapOf(String.class, Object.class));
+    }
 
-    Response clientResponse = writeDocument(uuidPath, listAsDocument);
+    @Test
+    public void shouldReturn200ForUpdatedContent() {
+        when(documentStoreService.write(eq(RESOURCE_TYPE), anyMapOf(String.class, Object.class)))
+                .thenReturn(DocumentWritten.updated(listAsDocument));
 
-    assertThat("", clientResponse, hasProperty("status", equalTo(503)));
-  }
+        Response clientResponse = writeDocument(uuidPath, listAsDocument);
+        assertThat("response", clientResponse, hasProperty("status", equalTo(200)));
+    }
 
-  @Test
-  public void shouldReturn500WhenExternalSystemHasAnInternalException() {
-    when(documentStoreService.write(eq(RESOURCE_TYPE), any()))
-        .thenThrow(
-            new ExternalSystemInternalServerException(
-                new IllegalArgumentException("Some bogus exception")));
+    @Test
+    public void shouldReturn400OnWriteWhenUuidNotValid() {
+        doThrow(new ValidationException("Invalid Uuid")).when(uuidValidator).validate(anyString());
+        Response clientResponse = writeDocument(uuidPath, listAsDocument);
 
-    Response clientResponse = writeDocument(uuidPath, listAsDocument);
+        assertThat("response", clientResponse, hasProperty("status", equalTo(400)));
+        validateErrorMessage("Invalid Uuid", clientResponse);
+    }
 
-    assertThat("", clientResponse, hasProperty("status", equalTo(500)));
-  }
+    @Test
+    public void shouldReturn503WhenCannotAccessExternalSystem() {
+        when(documentStoreService.write(eq(RESOURCE_TYPE), any()))
+                .thenThrow(new ExternalSystemUnavailableException("Cannot connect to Mongo"));
 
-  // REMOVE
+        Response clientResponse = writeDocument(uuidPath, listAsDocument);
 
-  @Test
-  public void shouldReturn200WhenDeletedSuccessfully() {
-    Response clientResponse = resources.client().target(uuidPath).request().delete();
+        assertThat("", clientResponse, hasProperty("status", equalTo(503)));
+    }
 
-    assertThat("response", clientResponse, hasProperty("status", equalTo(200)));
-  }
+    @Test
+    public void shouldReturn500WhenExternalSystemHasAnInternalException() {
+        when(documentStoreService.write(eq(RESOURCE_TYPE), any())).thenThrow(
+                new ExternalSystemInternalServerException(new IllegalArgumentException("Some bogus exception")));
 
-  @Test
-  public void shouldReturn200WhenDeletingNonExistentContentList() {
-    doThrow(new DocumentNotFoundException(UUID.fromString(uuid)))
-        .when(documentStoreService)
-        .delete(eq(RESOURCE_TYPE), any(UUID.class));
+        Response clientResponse = writeDocument(uuidPath, listAsDocument);
 
-    Response clientResponse = resources.client().target(uuidPath).request().delete();
+        assertThat("", clientResponse, hasProperty("status", equalTo(500)));
+    }
 
-    assertThat("response", clientResponse, hasProperty("status", equalTo(200)));
-  }
+    // REMOVE
 
-  @Test
-  public void shouldReturn400OnDeleteWhenUuidNotValid() {
-    doThrow(new ValidationException("Invalid Uuid")).when(uuidValidator).validate(anyString());
-    Response clientResponse = resources.client().target(uuidPath).request().delete();
+    @Test
+    public void shouldReturn200WhenDeletedSuccessfully() {
+        Response clientResponse = resources.client().target(uuidPath).request().delete();
 
-    assertThat("response", clientResponse, hasProperty("status", equalTo(400)));
-    validateErrorMessage("Invalid Uuid", clientResponse);
-  }
+        assertThat("response", clientResponse, hasProperty("status", equalTo(200)));
+    }
 
-  @Test
-  public void shouldReturn503OnDeleteWhenMongoIsntReachable() {
-    doThrow(new ExternalSystemUnavailableException("Cannot connect to Mongo"))
-        .when(documentStoreService)
-        .delete(eq(RESOURCE_TYPE), any(UUID.class));
+    @Test
+    public void shouldReturn200WhenDeletingNonExistentContentList() {
+        doThrow(new DocumentNotFoundException(UUID.fromString(uuid))).when(documentStoreService)
+                .delete(eq(RESOURCE_TYPE), any(UUID.class));
 
-    Response clientResponse = resources.client().target(uuidPath).request().delete();
+        Response clientResponse = resources.client().target(uuidPath).request().delete();
 
-    assertThat("response", clientResponse, hasProperty("status", equalTo(503)));
-  }
+        assertThat("response", clientResponse, hasProperty("status", equalTo(200)));
+    }
 
-  // READ
-  @Test
-  public void shouldReturn200WhenReadSuccessfully()
-      throws JsonMappingException, JsonProcessingException {
-    Map conceptDocument = (Map) listAsDocument.get("concept");
-    Concept concept =
-        new Concept(
-            UUID.fromString(conceptDocument.get("uuid").toString()),
-            conceptDocument.get("prefLabel").toString());
-    Concept resultConcept =
-        objectMapper.readValue(objectMapper.writeValueAsString(concept), Concept.class);
+    @Test
+    public void shouldReturn400OnDeleteWhenUuidNotValid() {
+        doThrow(new ValidationException("Invalid Uuid")).when(uuidValidator).validate(anyString());
+        Response clientResponse = resources.client().target(uuidPath).request().delete();
 
-    when(publicConceptsApiService.getUpToDateConcept(eq(concept))).thenReturn(resultConcept);
-    when(documentStoreService.findByUuid(eq(RESOURCE_TYPE), any(UUID.class)))
-        .thenReturn(listAsDocument);
-    Response clientResponse = resources.client().target(uuidPath).request().get();
+        assertThat("response", clientResponse, hasProperty("status", equalTo(400)));
+        validateErrorMessage("Invalid Uuid", clientResponse);
+    }
 
-    assertThat("response", clientResponse, hasProperty("status", equalTo(200)));
-    final ContentList retrievedDocument = clientResponse.readEntity(ContentList.class);
-    verify(publicConceptsApiService).getUpToDateConcept(eq(concept));
-    verify(documentStoreService).findByUuid(eq(RESOURCE_TYPE), any(UUID.class));
-    assertThat("inboundListAsDocument", retrievedDocument, equalTo(outboundList));
-  }
+    @Test
+    public void shouldReturn503OnDeleteWhenMongoIsntReachable() {
+        doThrow(new ExternalSystemUnavailableException("Cannot connect to Mongo")).when(documentStoreService)
+                .delete(eq(RESOURCE_TYPE), any(UUID.class));
 
-  @Test
-  public void shouldReturnListWithoutConceptWhenReadSuccessfully()
-      throws JsonMappingException, JsonProcessingException {
-    when(publicConceptsApiService.getUpToDateConcept(eq(null))).thenReturn(null);
-    when(documentStoreService.findByUuid(eq(RESOURCE_TYPE), any(UUID.class)))
-        .thenReturn(listWithoutConceptAsDocument);
-    Response clientResponse = resources.client().target(uuidPath).request().get();
+        Response clientResponse = resources.client().target(uuidPath).request().delete();
 
-    assertThat("response", clientResponse, hasProperty("status", equalTo(200)));
-    final ContentList retrievedDocument = clientResponse.readEntity(ContentList.class);
-    verify(publicConceptsApiService).getUpToDateConcept(eq(null));
-    verify(documentStoreService).findByUuid(eq(RESOURCE_TYPE), any(UUID.class));
-    assertThat("inboundListAsDocument", retrievedDocument, equalTo(outboundListWithoutConcept));
-  }
+        assertThat("response", clientResponse, hasProperty("status", equalTo(503)));
+    }
 
-  @Test
-  public void shouldReturn404WhenContentNotFound() {
-    when(documentStoreService.findByUuid(eq(RESOURCE_TYPE), any(UUID.class)))
-        .thenThrow(new DocumentNotFoundException(UUID.fromString(uuid)));
+    // READ
+    @Test
+    public void shouldReturn200WhenReadSuccessfully() throws JsonMappingException, JsonProcessingException {
+        Map conceptDocument = (Map) listAsDocument.get("concept");
+        Concept concept = new Concept(UUID.fromString(conceptDocument.get("uuid").toString()),
+                conceptDocument.get("prefLabel").toString());
+        Concept resultConcept = objectMapper.readValue(objectMapper.writeValueAsString(concept), Concept.class);
 
-    Response clientResponse = resources.client().target(uuidPath).request().get();
+        when(publicConceptsApiService.getUpToDateConcept(eq(concept))).thenReturn(resultConcept);
+        when(documentStoreService.findByUuid(eq(RESOURCE_TYPE), any(UUID.class))).thenReturn(listAsDocument);
+        Response clientResponse = resources.client().target(uuidPath).request().get();
 
-    assertThat("response", clientResponse, hasProperty("status", equalTo(404)));
-    validateErrorMessage("Requested item does not exist", clientResponse);
-  }
+        assertThat("response", clientResponse, hasProperty("status", equalTo(200)));
+        final ContentList retrievedDocument = clientResponse.readEntity(ContentList.class);
+        verify(publicConceptsApiService).getUpToDateConcept(eq(concept));
+        verify(documentStoreService).findByUuid(eq(RESOURCE_TYPE), any(UUID.class));
+        assertThat("inboundListAsDocument", retrievedDocument, equalTo(outboundList));
+    }
 
-  @Test
-  public void shouldReturn400OnReadWhenUuidNotValid() {
-    doThrow(new ValidationException("Invalid Uuid")).when(uuidValidator).validate(anyString());
-    Response clientResponse = resources.client().target(uuidPath).request().get();
+    @Test
+    public void shouldReturnListWithoutConceptWhenReadSuccessfully()
+            throws JsonMappingException, JsonProcessingException {
+        when(publicConceptsApiService.getUpToDateConcept(eq(null))).thenReturn(null);
+        when(documentStoreService.findByUuid(eq(RESOURCE_TYPE), any(UUID.class)))
+                .thenReturn(listWithoutConceptAsDocument);
+        Response clientResponse = resources.client().target(uuidPath).request().get();
 
-    assertThat("response", clientResponse, hasProperty("status", equalTo(400)));
-    validateErrorMessage("Invalid Uuid", clientResponse);
-  }
+        assertThat("response", clientResponse, hasProperty("status", equalTo(200)));
+        final ContentList retrievedDocument = clientResponse.readEntity(ContentList.class);
+        verify(publicConceptsApiService).getUpToDateConcept(eq(null));
+        verify(documentStoreService).findByUuid(eq(RESOURCE_TYPE), any(UUID.class));
+        assertThat("inboundListAsDocument", retrievedDocument, equalTo(outboundListWithoutConcept));
+    }
 
-  @Test
-  public void shouldReturn503OnReadWhenMongoIsntReachable() {
-    doThrow(new ExternalSystemUnavailableException("Cannot connect to Mongo"))
-        .when(documentStoreService)
-        .findByUuid(eq(RESOURCE_TYPE), any(UUID.class));
+    @Test
+    public void shouldReturn404WhenContentNotFound() {
+        when(documentStoreService.findByUuid(eq(RESOURCE_TYPE), any(UUID.class)))
+                .thenThrow(new DocumentNotFoundException(UUID.fromString(uuid)));
 
-    Response clientResponse = resources.client().target(uuidPath).request().get();
+        Response clientResponse = resources.client().target(uuidPath).request().get();
 
-    assertThat("response", clientResponse, hasProperty("status", equalTo(503)));
-  }
+        assertThat("response", clientResponse, hasProperty("status", equalTo(404)));
+        validateErrorMessage("Requested item does not exist", clientResponse);
+    }
 
-  // FIND LIST BY CONCEPT AND TYPE
-  @Test
-  public void shouldReturn200ForDocumentFoundByConceptAndType()
-      throws JsonMappingException, JsonProcessingException {
-    String type = "TopStories";
-    String typeParam = "curatedTopStoriesFor";
+    @Test
+    public void shouldReturn400OnReadWhenUuidNotValid() {
+        doThrow(new ValidationException("Invalid Uuid")).when(uuidValidator).validate(anyString());
+        Response clientResponse = resources.client().target(uuidPath).request().get();
 
-    List<Concordance> concordances = new ArrayList<>();
-    Concept concept = new Concept(CONCEPT_UUID, CONCEPT.getPrefLabel());
-    concordances.add(
-        new Concordance(
-            concept, new Identifier("http://api.ft.com/system/UPP", CONCEPT_UUID.toString())));
-    Concept resultConcept =
-        objectMapper.readValue(objectMapper.writeValueAsString(concept), Concept.class);
-    when(publicConcordancesApiService.getUPPConcordances(eq(CONCEPT_UUID.toString())))
-        .thenReturn(concordances);
-    when(documentStoreService.findByConceptAndType(eq(RESOURCE_TYPE), eq(CONCEPT_UUIDS), eq(type)))
-        .thenReturn(listAsDocument);
-    when(publicConceptsApiService.getUpToDateConcept(eq(concept))).thenReturn(resultConcept);
+        assertThat("response", clientResponse, hasProperty("status", equalTo(400)));
+        validateErrorMessage("Invalid Uuid", clientResponse);
+    }
 
-    Response clientResponse =
-        resources
-            .client()
-            .target("/lists")
-            .queryParam(typeParam, CONCEPT_UUID.toString())
-            .request()
-            .get();
+    @Test
+    public void shouldReturn503OnReadWhenMongoIsntReachable() {
+        doThrow(new ExternalSystemUnavailableException("Cannot connect to Mongo")).when(documentStoreService)
+                .findByUuid(eq(RESOURCE_TYPE), any(UUID.class));
 
-    assertThat("response", clientResponse, hasProperty("status", equalTo(200)));
-    final ContentList retrievedDocument = clientResponse.readEntity(ContentList.class);
-    verify(publicConceptsApiService).getUpToDateConcept(eq(concept));
-    verify(publicConcordancesApiService).getUPPConcordances(eq(CONCEPT_UUID.toString()));
-    verify(documentStoreService)
-        .findByConceptAndType(eq(RESOURCE_TYPE), eq(CONCEPT_UUIDS), eq(type));
-    assertThat("documents were not the same", retrievedDocument, equalTo(outboundList));
-  }
+        Response clientResponse = resources.client().target(uuidPath).request().get();
 
-  @Test
-  public void shouldReturn404ForDocumentNotFoundByConceptAndType() {
-    String type = "TopStories";
-    String typeParam = "curatedTopStoriesFor";
+        assertThat("response", clientResponse, hasProperty("status", equalTo(503)));
+    }
 
-    when(documentStoreService.findByConceptAndType(eq(RESOURCE_TYPE), eq(CONCEPT_UUIDS), eq(type)))
-        .thenReturn(null);
-    Response clientResponse =
-        resources
-            .client()
-            .target("/lists")
-            .queryParam(typeParam, CONCEPT_UUID.toString())
-            .request()
-            .get();
+    // FIND LIST BY CONCEPT AND TYPE
+    @Test
+    public void shouldReturn200ForDocumentFoundByConceptAndType() throws JsonMappingException, JsonProcessingException {
+        String type = "TopStories";
+        String typeParam = "curatedTopStoriesFor";
 
-    assertThat("response", clientResponse, hasProperty("status", equalTo(404)));
-  }
+        List<Concordance> concordances = new ArrayList<>();
+        Concept concept = new Concept(CONCEPT_UUID, CONCEPT.getPrefLabel());
+        concordances
+                .add(new Concordance(concept, new Identifier("http://api.ft.com/system/UPP", CONCEPT_UUID.toString())));
+        Concept resultConcept = objectMapper.readValue(objectMapper.writeValueAsString(concept), Concept.class);
+        when(publicConcordancesApiService.getUPPConcordances(eq(CONCEPT_UUID.toString()))).thenReturn(concordances);
+        when(documentStoreService.findByConceptAndType(eq(RESOURCE_TYPE), eq(CONCEPT_UUIDS), eq(type)))
+                .thenReturn(listAsDocument);
+        when(publicConceptsApiService.getUpToDateConcept(eq(concept))).thenReturn(resultConcept);
 
-  @Test
-  public void shouldReturn400ForNoQueryParameterSupplied() {
-    Response clientResponse = resources.client().target("/lists").request().get();
+        Response clientResponse = resources.client().target("/lists").queryParam(typeParam, CONCEPT_UUID.toString())
+                .request().get();
 
-    assertThat("response", clientResponse, hasProperty("status", equalTo(400)));
-    validateErrorMessage("Expected at least one query parameter", clientResponse);
-  }
+        assertThat("response", clientResponse, hasProperty("status", equalTo(200)));
+        final ContentList retrievedDocument = clientResponse.readEntity(ContentList.class);
+        verify(publicConceptsApiService).getUpToDateConcept(eq(concept));
+        verify(publicConcordancesApiService).getUPPConcordances(eq(CONCEPT_UUID.toString()));
+        verify(documentStoreService).findByConceptAndType(eq(RESOURCE_TYPE), eq(CONCEPT_UUIDS), eq(type));
+        assertThat("documents were not the same", retrievedDocument, equalTo(outboundList));
+    }
 
-  @Test
-  public void shouldReturn400ForNoValidQueryParameterSupplied() {
-    String invalidTypeParam = "invalidType";
+    @Test
+    public void shouldReturn404ForDocumentNotFoundByConceptAndType() {
+        String type = "TopStories";
+        String typeParam = "curatedTopStoriesFor";
 
-    Response clientResponse =
-        resources
-            .client()
-            .target("/lists")
-            .queryParam(invalidTypeParam, CONCEPT_UUID.toString())
-            .request()
-            .get();
+        when(documentStoreService.findByConceptAndType(eq(RESOURCE_TYPE), eq(CONCEPT_UUIDS), eq(type)))
+                .thenReturn(null);
+        Response clientResponse = resources.client().target("/lists").queryParam(typeParam, CONCEPT_UUID.toString())
+                .request().get();
 
-    assertThat("response", clientResponse, hasProperty("status", equalTo(400)));
-    validateErrorMessage(
-        "Expected at least one query parameter of the form \"curated<listType>For\"",
-        clientResponse);
-  }
+        assertThat("response", clientResponse, hasProperty("status", equalTo(404)));
+    }
 
-  @Test
-  public void shouldReturn400ForNoValidUUID() {
-    String conceptID = "123";
-    String typeParam = "curatedTopStoriesFor";
+    @Test
+    public void shouldReturn400ForNoQueryParameterSupplied() {
+        Response clientResponse = resources.client().target("/lists").request().get();
 
-    Response clientResponse =
-        resources.client().target("/lists").queryParam(typeParam, conceptID).request().get();
+        assertThat("response", clientResponse, hasProperty("status", equalTo(400)));
+        validateErrorMessage("Expected at least one query parameter", clientResponse);
+    }
 
-    assertThat("response", clientResponse, hasProperty("status", equalTo(400)));
-    validateErrorMessage("The concept ID is not a valid UUID", clientResponse);
-  }
+    @Test
+    public void shouldReturn400ForNoValidQueryParameterSupplied() {
+        String invalidTypeParam = "invalidType";
 
-  // OTHER
-  @Test
-  public void shouldReturn405ForPost() {
-    Response clientResponse = resources.client().target(uuidPath).request().post(Entity.json(null));
+        Response clientResponse = resources.client().target("/lists")
+                .queryParam(invalidTypeParam, CONCEPT_UUID.toString()).request().get();
 
-    assertThat("response", clientResponse, hasProperty("status", equalTo(405)));
-  }
+        assertThat("response", clientResponse, hasProperty("status", equalTo(400)));
+        validateErrorMessage("Expected at least one query parameter of the form \"curated<listType>For\"",
+                clientResponse);
 
-  private Response writeDocument(String writePath, Document document) {
-    return resources
-        .client()
-        .target(writePath)
-        .request()
-        .put(Entity.entity(document, MediaType.APPLICATION_JSON));
-  }
+    }
 
-  private void validateErrorMessage(
-      String expectedErrorMessage, javax.ws.rs.core.Response clientResponse) {
-    final ErrorEntity responseBodyMessage = clientResponse.readEntity(ErrorEntity.class);
-    assertThat(
-        "message", responseBodyMessage, hasProperty("message", equalTo(expectedErrorMessage)));
-  }
+    @Test
+    public void shouldReturn400ForNoValidUUID() {
+        String conceptID = "123";
+        String typeParam = "curatedTopStoriesFor";
+
+        Response clientResponse = resources.client().target("/lists").queryParam(typeParam, conceptID).request().get();
+
+        assertThat("response", clientResponse, hasProperty("status", equalTo(400)));
+        validateErrorMessage("The concept ID is not a valid UUID", clientResponse);
+
+    }
+
+    // OTHER
+    @Test
+    public void shouldReturn405ForPost() {
+        Response clientResponse = resources.client().target(uuidPath).request().post(Entity.json(null));
+
+        assertThat("response", clientResponse, hasProperty("status", equalTo(405)));
+    }
+
+    private Response writeDocument(String writePath, Document document) {
+        return resources.client().target(writePath).request().put(Entity.entity(document, MediaType.APPLICATION_JSON));
+    }
+
+    private void validateErrorMessage(String expectedErrorMessage, javax.ws.rs.core.Response clientResponse) {
+        final ErrorEntity responseBodyMessage = clientResponse.readEntity(ErrorEntity.class);
+        assertThat("message", responseBodyMessage, hasProperty("message", equalTo(expectedErrorMessage)));
+    }
 }

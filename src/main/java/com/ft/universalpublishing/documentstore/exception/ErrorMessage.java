@@ -1,6 +1,8 @@
 package com.ft.universalpublishing.documentstore.exception;
 
-/** Created by peter.clark on 11/10/2016. */
+/**
+ * Created by peter.clark on 11/10/2016.
+ */
 public class ErrorMessage {
 
   private final String message;

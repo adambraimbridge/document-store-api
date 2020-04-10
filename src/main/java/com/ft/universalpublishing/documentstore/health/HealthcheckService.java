@@ -1,6 +1,8 @@
 package com.ft.universalpublishing.documentstore.health;
 
-/** HealthcheckService */
+/**
+ * HealthcheckService
+ */
 public interface HealthcheckService {
-  public boolean isHealthcheckOK();
+    public boolean isHealthcheckOK();
 }

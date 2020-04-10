@@ -1,9 +1,5 @@
 package com.ft.universalpublishing.documentstore.health;
 
-import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertThat;
-import static org.mockito.Mockito.when;
-
 import com.ft.platform.dropwizard.AdvancedResult;
 import com.ft.universalpublishing.documentstore.service.MongoDocumentStoreService;
 import org.junit.jupiter.api.BeforeEach;
@@ -12,41 +8,42 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import static org.hamcrest.CoreMatchers.is;
+import static org.junit.Assert.assertThat;
+import static org.mockito.Mockito.when;
+
 @ExtendWith(MockitoExtension.class)
 public class DocumentStoreConnectionHealthCheckTest {
-  private DocumentStoreConnectionHealthCheck healthcheck;
+    private DocumentStoreConnectionHealthCheck healthcheck;
 
-  @Mock private HealthcheckParameters healthcheckParameters;
+    @Mock
+    private HealthcheckParameters healthcheckParameters;
 
-  @Mock private MongoDocumentStoreService service;
+    @Mock
+    private MongoDocumentStoreService service;
 
-  @BeforeEach
-  public void setUp() {
-    healthcheckParameters =
-        new HealthcheckParameters(
-            "Connectivity to MongoDB",
-            1,
-            "business impact message",
-            "technical summary message",
-            "https://panic_guide_url");
-    healthcheck = new DocumentStoreConnectionHealthCheck(service, healthcheckParameters);
-  }
+    @BeforeEach
+    public void setUp() {
+        healthcheckParameters = new HealthcheckParameters("Connectivity to MongoDB", 1, "business impact message",
+                "technical summary message", "https://panic_guide_url");
+        healthcheck = new DocumentStoreConnectionHealthCheck(service, healthcheckParameters);
+    }
 
-  @Test
-  public void shouldReturnOKStatusWhenConnectedIsTrue() {
-    when(service.isConnected()).thenReturn(true);
+    @Test
+    public void shouldReturnOKStatusWhenConnectedIsTrue() {
+        when(service.isConnected()).thenReturn(true);
+        
+        AdvancedResult result = healthcheck.checkAdvanced();
 
-    AdvancedResult result = healthcheck.checkAdvanced();
+        assertThat(result.status(), is(AdvancedResult.Status.OK));
+    }
 
-    assertThat(result.status(), is(AdvancedResult.Status.OK));
-  }
+    @Test
+    public void shouldReturnErrorStatusWhenConnectedIsFalse() {
+        when(service.isConnected()).thenReturn(false);
+        
+        AdvancedResult result = healthcheck.checkAdvanced();
 
-  @Test
-  public void shouldReturnErrorStatusWhenConnectedIsFalse() {
-    when(service.isConnected()).thenReturn(false);
-
-    AdvancedResult result = healthcheck.checkAdvanced();
-
-    assertThat(result.status(), is(AdvancedResult.Status.ERROR));
-  }
+        assertThat(result.status(), is(AdvancedResult.Status.ERROR));
+    }
 }
