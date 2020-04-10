@@ -231,19 +231,6 @@ public class MongoDocumentStoreService {
             // modified list
             found = dbCollection.find(filter).sort(new BasicDBObject("lastModified", -1)).limit(1).first();
 
-            // {
-            // if (found == null) {
-            // found = doc;
-            // found.remove("_id");
-            // } else {
-            // LOG.error("found too many results for collection {} identifier {}:{}: at
-            // least {} and {}",
-            // resourceType, conceptUUIDs, listType, found, doc);
-            // return found; // just return the first one we found (graceful degradation)
-            // and log the error
-            // }
-            // }
-
             return found;
         } catch (MongoException e) {
             LOG.error("Failed to find document in Mongo! Collection {}, uuid {}, listType {}", resourceType,
